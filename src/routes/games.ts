@@ -412,14 +412,13 @@ app.post('/getGameRating', async (req, res) => {
         } else {
 
             if (data.rows[0].accesstoken === req.body.accessToken) {
-                const rating_total = await conn.legacy('SELECT * FROM gameRatings WHERE gameid=$1 and rating>0;', [req.body.gameId]);
+                const rating_total = await conn.legacy('SELECT * FROM gameRatings WHERE gameid=$1;', [req.body.gameid]);
                 const number_total = rating_total.rows.length;
-                const avg_rating = await conn.legacy('SELECT AVG(rating) FROM WHERE gameid=$1 and rating>0;', [req.body.gameId]);
+                const avg_rating = await conn.legacy('SELECT AVG(rating) FROM gameRatings WHERE gameid=$1;', [req.body.gameid]);
                 const number_avg = avg_rating.rows[0].avg;
                 res.send({
-                    'message': 'Ratings got successfully!',
-                    'averageRating': number_avg ?? 0,
-                    'totalRating': number_total ?? 0
+                    'message': 'Ratings got successfully!', 'averageRating': number_avg,
+                    'totalRating': number_total
                 });
             }
         }

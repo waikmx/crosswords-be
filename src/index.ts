@@ -10,8 +10,7 @@ import * as games from './routes/games';
 import * as general from './routes/general';
 import * as users from './routes/users';
 var cron = require('node-cron');
-const PORT = 2000;
-//const PORT = process.env["WERKOS_APP_PORT"];
+const PORT = process.env["WERKOS_APP_PORT"];
 const app= express();
 
 const Pool = require('pg').Pool

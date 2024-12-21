@@ -97,7 +97,7 @@ Content-Type: application/json
 {
   "accessToken": "{{accessToken}}",
   "userId": {{userId}},
-  "sharecode": "4287428",
+  "sharecode": "CHAL1101",
   "wordLimit": 18
 }
 
@@ -259,18 +259,6 @@ Content-Type: application/json
 ###
 
 POST {{host}}/getLeaderboards
-Content-Type: application/json
-
-{
-  "accessToken": "{{accessToken}}",
-  "userId": {{userId}},
-  "gameId": 1071
-
-}
-
-###
-
-POST {{host}}/getGameRating
 Content-Type: application/json
 
 {

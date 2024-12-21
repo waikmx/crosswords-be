@@ -221,8 +221,36 @@ export class CrossWordsDB extends DBConnection {
         ug_limit: string = null
     ) {
 
-        let [baseGame, _] = await this.getWithGameID(id.toString())
+        if (gridType === "fixed") {
+            let game = await this.SELECT_WHERE(
+                'games', // table name
+                ['id'], // field to match in WHERE clause
+                [id], // value for the id field
+                false, // no random order
+                1 // limit
+            ); 
+        
+            let fixedGridExists = await this.SELECT_WHERE(
+                'fixed_grids', // table to search
+                ['game'], // search by game field
+                [id], // match gameID
+                false, // no random order
+                1 // limit to one result
+            );
+        
+            let fixedData = generateCrossword(
+                correct.length + incorrect.length,
+                searchType, fixed, game.rows[0]
+            )
+        
+            if (fixedGridExists && fixedGridExists.rows.length > 0) {
+                await this.updateFixedGrid(id.toString(), fixedData["grid"], fixedData["words"]);
+            }else {
+                await this.saveFixedGrid(Number(id), fixedData["grid"], fixedData["words"]);
+            }
+        }
 
+        let [baseGame, _] = await this.getWithGameID(id.toString())
         let playStatus = subscriptionStatus != null ? (
             ["1year", "1month"].includes(subscriptionStatus) ? "unlimited" : "limited"
         ) : null
