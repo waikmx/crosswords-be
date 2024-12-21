@@ -1,0 +1,281 @@
+###
+
+POST {{host}}/getUserInfo
+Content-Type: application/json
+
+{
+  "accessToken": "",
+  "userId": ""
+}
+
+###
+
+POST {{host}}/getUserInfo
+Content-Type: application/json
+
+{
+  "accessToken": "user9ab4d012813569b31485f6eb4a0df867b1d02964",
+  "userId": 750
+}
+
+###
+
+POST {{host}}/getUserInfo
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "subStatus": "1month"
+}
+
+###
+
+POST {{host}}/getUserInfo
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "subStatus": "1year"
+}
+
+
+###
+
+POST {{host}}/getUserInfo
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}}
+}
+
+###
+
+POST {{host}}/randomsearch_crossword
+Content-Type: application/json
+
+{
+  "language": "en",
+  "userId": {{userId}},
+  "wordLimit": "18",
+  "accessToken": "{{accessToken}}",
+  "type": "search"
+}
+
+###
+POST {{host}}/topicwise_crossword
+Content-Type: application/json
+
+{
+  "language": "en",
+  "userId": {{userId}},
+  "wordLimit": 18,
+  "type": "search",
+  "accessToken": "{{accessToken}}",
+  "category": "POLITICS",
+  "topic": "CANDIDATES"
+}
+
+###
+POST {{host}}/randomsearch_crossword
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "wordLimit": 18,
+  "searchtype": "challenge",
+  "language": "en"
+}
+
+###
+POST {{host}}/getGameByCode
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "sharecode": "4287428",
+  "wordLimit": 18
+}
+
+###
+POST {{host}}/duplicateGame
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "gameId": 1336
+}
+
+###
+POST {{host}}/getAllUserGames
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}}
+}
+
+###
+POST {{host}}/createGame
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "gameName": "Pokemon",
+  "gameLanguage": "en",
+  "totalWords": 18,
+  "wordLimit": 18,
+  "correct": [
+    "CHARMANDER",
+    "PIKACHU",
+    "RAICHU",
+    "BULBASAUR",
+    "SQUIRTLE",
+    "BLASTOISE",
+    "CHICORITA",
+    "MUDKIP",
+    "TORTERRA",
+    "MEW",
+    "MEWTWO",
+    "SALAMENCE",
+    "KYOGRE"
+  ],
+  "incorrect": [],
+  "gameType": "private",
+  "searchType": "search",
+  "gridType": "fixed"
+}
+
+###
+POST {{host}}/createGame
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "gameName": "Pokemon",
+  "gameLanguage": "en",
+  "totalWords": 18,
+  "limitedWords": 18,
+  "correct": [
+    "CHARMANDER",
+    "PIKACHU ",
+    "RAICHU",
+    "BULBASAUR",
+    "SQUIRTLE",
+    "BLASTOISE",
+    "CHICORITA",
+    "MUDKIP",
+    "TORTERRA",
+    "MEW",
+    "MEWTWO",
+    "SALAMENCE",
+    "KYOGRE",
+    "LUGIA",
+    "TAUROS",
+    "WIPINBELL",
+    "TANGELA",
+    "LUNAROCK"
+  ],
+  "gameType": "public",
+  "searchType": "search",
+  "gridType": "dynamic"
+}
+
+###
+POST {{host}}/createGame
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "gameName": "Is it a Pokemon?",
+  "gameLanguage": "en",
+  "wordLimit": 18,
+  "correct": [
+    "ABSOL",
+    "ALTARIA",
+    "AZURILL",
+    "FLAREON",
+    "GLACEON",
+    "GLISCOR",
+    "GROUDON",
+    "HEATRAN",
+    "MAROWAK",
+    "METANG",
+    "MILOTIC",
+    "NINCADA",
+    "NUMEL",
+    "RAYQUAZA",
+    "SENTRET",
+    "UMBREON",
+    "URSARING",
+    "VAPOREON",
+    "VIBRAVA",
+    "VULPIX"
+  ],
+  "incorrect": [
+    "ACEON",
+    "ACTOS",
+    "ARANESP",
+    "BANZEL",
+    "CARNITOR",
+    "CLASTEON",
+    "CRESTOR",
+    "DECADRON",
+    "FUZEON",
+    "GEODON",
+    "JALYN",
+    "LUXIQ",
+    "NAVANE",
+    "QVAR",
+    "RESCRIPTOR",
+    "ROZEREM",
+    "TICLID",
+    "TYGACIL",
+    "VOLTAREN"
+  ],
+  "type": "public",
+  "searchType": "challenge",
+  "gridType": "dynamic"
+}
+
+###
+POST {{host}}/updateUserSubscriptionStatus
+Content-Type: application/json
+
+{
+  "accessToken": "user90395831846dfb9fc4d5c953e6139b6c1a836346",
+  "userId": 402,
+  "subStatus": "1year"
+}
+
+###
+
+POST {{host}}/getLeaderboards
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "gameId": 1071
+
+}
+
+###
+
+POST {{host}}/getGameRating
+Content-Type: application/json
+
+{
+  "accessToken": "{{accessToken}}",
+  "userId": {{userId}},
+  "gameId": 1071
+
+}
