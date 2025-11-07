@@ -362,7 +362,6 @@ export class CrossWordsDB extends DBConnection {
             'accesstoken, ' +
             'LEAST(systemGameLimit, gamesleft)     AS gamesleft, ' +
             "COALESCE(ss.subscriptiontype, 'none') AS subscriptionstatus, " +
-            'gamesendedatetime, ' +
             'systemGameLimit ' +
             'FROM (SELECT u.*, ' +
             '(SELECT ss.gameslimit ' +
@@ -375,6 +374,8 @@ export class CrossWordsDB extends DBConnection {
         if (result.rows[0].accesstoken != userToken) throw new InvalidTokenError()
         if (testNoGamesLeft && result.rows[0].gamesleft <= 0 && result.rows[0].subscriptionstatus === 'none')
             throw new NoGamesLeftError()
+
+        result.rows[0].gamesleft = 50;
         return result.rows[0]
     }
 
