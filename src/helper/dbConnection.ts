@@ -375,7 +375,7 @@ export class CrossWordsDB extends DBConnection {
         if (testNoGamesLeft && result.rows[0].gamesleft <= 0 && result.rows[0].subscriptionstatus === 'none')
             throw new NoGamesLeftError()
 
-        result.rows[0].gamesleft = 50;
+        result.rows[0].gamesleft = 2;
         return result.rows[0]
     }
 
