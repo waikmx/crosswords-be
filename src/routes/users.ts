@@ -1,8 +1,9 @@
-import {GameError, NoGamesLeftError, UserAlreadyExists} from "../exceptions";
+import {GameError, UserAlreadyExists} from "../exceptions";
 import express from 'express';
 import {generateAccessToken, generateUserName} from '../helper/helper';
 import {CrossWordsDB} from "../helper/dbConnection";
-import {addMonths, addYears, format} from 'date-fns'
+import {createGetAllUserGamesHandler} from "./getAllUserGamesHandler";
+import {createGetUserInfoHandler} from "./getUserInfoHandler";
 
 require('dotenv').config()
 
@@ -96,43 +97,7 @@ app.post('/changeUserName', async (req, res) => {
 });
 
 
-app.post('/getUserInfo', async (req, res) => {
-    let response: {}
-    let code: number = 200
-
-    try {
-        let userData = await conn.getUserData(req.body.userId, req.body.accessToken)
-
-        if (["1month", "1year"].includes(req.body.subStatus)) {
-            let f = "yyyy/MM/dd"
-            let today = new Date()
-            let end = (req.body.subStatus == "1month" ? addMonths : addYears)(today, 1)
-            await conn.updateSubscription(
-                userData.id, req.body.subStatus, format(today, f), format(end, f)
-            )
-        }
-
-        let subStatus = await conn.getSubscriptions(userData.id)
-        if (subStatus["startdate"] != null) {
-            const startDate = subStatus["startdate"];
-            const endDate = subStatus["enddate"];
-
-            if (startDate > endDate) {
-                await conn.updateSubscription(userData.id)
-                await conn.limitUserGames(userData.id);
-            }
-        }
-
-        response = await conn.getUserData(req.body.userId, req.body.accessToken)
-        response['subscriptionstatus'] = subStatus["subscriptiontype"];
-        response['message'] = 'profile information';
-
-    } catch (err) {
-         if(!(err instanceof NoGamesLeftError))
-            response = await conn.createUser()
-    }
-    res.status(code).send(response);
-});
+app.post('/getUserInfo', createGetUserInfoHandler(conn));
 
 
 app.post('/addUserGameRecord', async function (req, res) {
@@ -176,20 +141,7 @@ app.post('/addUserGameRecord', async function (req, res) {
 })
 
 
-app.post('/getAllUserGames', async (req, res) => {
-    let response = {}
-    let code: number = 200
-    try {
-        await conn.getUserData(req.body.userId, req.body.accessToken)
-        response['message'] = 'All user game returned successfully'
-        response['allGames'] = await conn.listUserGames(req.body.userId, req.body.type)
-    } catch (err) {
-        console.log(err.stack)
-        code = (err instanceof GameError) ? err.code : 400
-        response = {'message': err.message}
-    }
-    res.status(code).send(response)
-});
+app.post('/getAllUserGames', createGetAllUserGamesHandler(conn));
 
 
 app.post('/getSingleUserGames', async (req, res) => {

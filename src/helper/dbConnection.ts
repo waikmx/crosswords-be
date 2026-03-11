@@ -70,6 +70,18 @@ abstract class DBConnection {
 }
 
 export class CrossWordsDB extends DBConnection {
+    private cleanDeviceId(deviceId: string = null) {
+        if (typeof deviceId !== "string") return null
+        const trimmed = deviceId.trim()
+        return trimmed.length > 0 ? trimmed : null
+    }
+
+    private maskDeviceId(deviceId: string = null) {
+        if (typeof deviceId !== "string" || deviceId.length === 0) return "[empty]"
+        if (deviceId.length <= 6) return "***"
+        return `${deviceId.slice(0, 3)}***${deviceId.slice(-3)}`
+    }
+
     public async getRandomGame(searchType: string, language: string, wordsLimit: string) {
         let game = await this.RAW_QUERY(
             "SELECT * " +
@@ -379,6 +391,69 @@ export class CrossWordsDB extends DBConnection {
         return result.rows[0]
     }
 
+    public async findUserIdByDeviceId(deviceId: string) {
+        const normalizedDeviceId = this.cleanDeviceId(deviceId)
+        if (normalizedDeviceId == null) return null
+
+        const result = await this.RAW_QUERY(
+            "SELECT user_id " +
+            "FROM user_devices " +
+            "WHERE device_id = $1 " +
+            "ORDER BY updated_at DESC NULLS LAST, id DESC " +
+            "LIMIT 2",
+            [normalizedDeviceId]
+        )
+
+        if (result.rows.length === 0) return null
+
+        if (
+            result.rows.length > 1 &&
+            String(result.rows[0].user_id) !== String(result.rows[1].user_id)
+        ) {
+            console.warn(
+                `[user_devices] device ${this.maskDeviceId(normalizedDeviceId)} is linked to multiple users; using latest linkage`
+            )
+        }
+
+        return String(result.rows[0].user_id)
+    }
+
+    public async upsertUserDevice(userId: string, deviceId: string, platform: string = null) {
+        const normalizedDeviceId = this.cleanDeviceId(deviceId)
+        if (normalizedDeviceId == null) return false
+
+        const existing = await this.RAW_QUERY(
+            "SELECT user_id " +
+            "FROM user_devices " +
+            "WHERE device_id = $1 " +
+            "ORDER BY updated_at DESC NULLS LAST, id DESC " +
+            "LIMIT 1",
+            [normalizedDeviceId]
+        )
+
+        if (
+            existing.rows.length > 0 &&
+            String(existing.rows[0].user_id) !== String(userId)
+        ) {
+            console.warn(
+                `[user_devices] device ${this.maskDeviceId(normalizedDeviceId)} is already linked to another user; skipping reassignment`
+            )
+            return false
+        }
+
+        await this.RAW_QUERY(
+            "INSERT INTO user_devices (user_id, device_id, platform) " +
+            "VALUES ($1, $2, $3) " +
+            "ON CONFLICT (user_id, device_id) " +
+            "DO UPDATE SET " +
+            "platform = COALESCE(EXCLUDED.platform, user_devices.platform), " +
+            "updated_at = CURRENT_TIMESTAMP",
+            [userId, normalizedDeviceId, platform ?? null]
+        )
+
+        return true
+    }
+
     public async getFixedGrid(gameId: string, isFixed: string) {
         let result = await this.SELECT_WHERE(`fixed_grids`, ['game'], [gameId])
         if (result.rows.length == 0) {
@@ -448,7 +523,9 @@ export class CrossWordsDB extends DBConnection {
     public async createUser(
         userName: string = null,
         token: string = null,
-        limit: string = null
+        limit: string = null,
+        deviceId: string = null,
+        platform: string = null
     ) {
         userName = userName ?? generateUserName("user", 6)
         token = token ?? generateAccessToken(userName)
@@ -460,6 +537,15 @@ export class CrossWordsDB extends DBConnection {
             [userName, token])
 
         await this.updateSubscription(result.rows[0].id)
+
+        if (deviceId != null) {
+            try {
+                await this.upsertUserDevice(String(result.rows[0].id), deviceId, platform)
+            } catch (error) {
+                console.warn("[user_devices] failed to store new user device linkage")
+                console.warn(error?.message ?? error)
+            }
+        }
 
         return {
             'message': 'user created successfully!',
