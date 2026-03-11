@@ -374,13 +374,21 @@ export class CrossWordsDB extends DBConnection {
             'accesstoken, ' +
             'LEAST(systemGameLimit, gamesleft)     AS gamesleft, ' +
             "COALESCE(ss.subscriptiontype, 'none') AS subscriptionstatus, " +
-            'systemGameLimit ' +
+            'systemGameLimit, ' +
+            'ud.device_id AS "deviceId" ' +
             'FROM (SELECT u.*, ' +
             '(SELECT ss.gameslimit ' +
             'FROM systemsettings ss ' +
             'LIMIT 1) systemGameLimit ' +
             'FROM usertable u WHERE u.id = $1) t ' +
-            'LEFT JOIN subcriptionstatus ss ON t.id = ss.userid ', [userId]);
+            'LEFT JOIN subcriptionstatus ss ON t.id = ss.userid ' +
+            'LEFT JOIN LATERAL ( ' +
+            'SELECT device_id ' +
+            'FROM user_devices ' +
+            'WHERE user_id = t.id ' +
+            'ORDER BY updated_at DESC NULLS LAST, id DESC ' +
+            'LIMIT 1 ' +
+            ') ud ON TRUE ', [userId]);
         console.log(JSON.stringify(result))
         if (result.rows.length < 1) throw new InvalidUserError()
         if (result.rows[0].accesstoken != userToken) throw new InvalidTokenError()
