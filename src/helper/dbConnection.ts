@@ -367,7 +367,7 @@ export class CrossWordsDB extends DBConnection {
         return [game.rows[0], await this.getFixedGrid(game.rows[0].id, game.rows[0].gridtype)]
     }
 
-    public async getUserData(userId: string, userToken: string, testNoGamesLeft = false) {
+    private async getUserDataRow(userId: string) {
         const result = await this.RAW_QUERY(
             'SELECT t.id, ' +
             'username, ' +
@@ -388,15 +388,30 @@ export class CrossWordsDB extends DBConnection {
             'WHERE user_id = t.id ' +
             'ORDER BY updated_at DESC NULLS LAST, id DESC ' +
             'LIMIT 1 ' +
-            ') ud ON TRUE ', [userId]);
+            ') ud ON TRUE ', [userId]
+        )
         console.log(JSON.stringify(result))
         if (result.rows.length < 1) throw new InvalidUserError()
-        if (result.rows[0].accesstoken != userToken) throw new InvalidTokenError()
-        if (testNoGamesLeft && result.rows[0].gamesleft <= 0 && result.rows[0].subscriptionstatus === 'none')
+        return result.rows[0]
+    }
+
+    public async getUserData(userId: string, userToken: string, testNoGamesLeft = false) {
+        const row = await this.getUserDataRow(userId)
+        if (row.accesstoken != userToken) throw new InvalidTokenError()
+        if (testNoGamesLeft && row.gamesleft <= 0 && row.subscriptionstatus === 'none')
             throw new NoGamesLeftError()
 
-        result.rows[0].gamesleft = 2;
-        return result.rows[0]
+        row.gamesleft = 2;
+        return row
+    }
+
+    public async getUserDataById(userId: string, testNoGamesLeft = false) {
+        const row = await this.getUserDataRow(userId)
+        if (testNoGamesLeft && row.gamesleft <= 0 && row.subscriptionstatus === "none")
+            throw new NoGamesLeftError()
+
+        row.gamesleft = 2
+        return row
     }
 
     public async findUserIdByDeviceId(deviceId: string) {

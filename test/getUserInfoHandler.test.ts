@@ -39,6 +39,13 @@ test("getUserInfo links device for existing user", async () => {
                 subscriptionstatus: "none"
             }
         },
+        getUserDataById: async () => ({
+            id: "101",
+            username: "user101",
+            accesstoken: "token",
+            gamesleft: 2,
+            subscriptionstatus: "none"
+        }),
         updateSubscription: async () => undefined,
         upsertUserDevice: async (userId: string, deviceId: string, platform: string) => {
             upsertCalls.push({userId, deviceId, platform})
@@ -93,6 +100,7 @@ test("getUserInfo creates new user and stores device", async () => {
         getUserData: async () => {
             throw new Error("Invalid token")
         },
+        getUserDataById: async () => createdUser,
         updateSubscription: async () => undefined,
         upsertUserDevice: async () => true,
         limitUserGames: async () => undefined
@@ -124,6 +132,13 @@ test("getUserInfo keeps old behavior when deviceId is missing", async () => {
         findUserIdByDeviceId: async () => null,
         getSubscriptions: async () => ({subscriptiontype: "none", startdate: null, enddate: null}),
         getUserData: async () => ({
+            id: "301",
+            username: "user301",
+            accesstoken: "token",
+            gamesleft: 2,
+            subscriptionstatus: "none"
+        }),
+        getUserDataById: async () => ({
             id: "301",
             username: "user301",
             accesstoken: "token",
@@ -168,6 +183,13 @@ test("getUserInfo repeated same user-device pair remains idempotent", async () =
             gamesleft: 2,
             subscriptionstatus: "none"
         }),
+        getUserDataById: async () => ({
+            id: "401",
+            username: "user401",
+            accesstoken: "token",
+            gamesleft: 2,
+            subscriptionstatus: "none"
+        }),
         updateSubscription: async () => undefined,
         upsertUserDevice: async (userId: string, deviceId: string) => {
             linkedPairs.add(`${userId}:${deviceId}`)
@@ -195,4 +217,59 @@ test("getUserInfo repeated same user-device pair remains idempotent", async () =
     assert.equal(secondRes.statusCode, 200)
     assert.equal(linkedPairs.size, 1)
     assert.equal([...linkedPairs][0], "401:BE2A.250530.026.F3")
+})
+
+test("getUserInfo returns linked existing user when auth is missing/invalid", async () => {
+    let createUserCalled = false
+    let getUserDataByIdCalls = 0
+
+    const restoredUser = {
+        id: "777",
+        username: "user777",
+        accesstoken: "restored-token",
+        gamesleft: 2,
+        subscriptionstatus: "none",
+        systemgamelimit: 1000,
+        deviceId: "BE2A.250530.026.F3"
+    }
+
+    const db = {
+        createUser: async () => {
+            createUserCalled = true
+            return {message: "user created successfully!"}
+        },
+        findUserIdByDeviceId: async () => "777",
+        getSubscriptions: async () => ({subscriptiontype: "none", startdate: null, enddate: null}),
+        getUserData: async () => {
+            throw new Error("Invalid token")
+        },
+        getUserDataById: async () => {
+            getUserDataByIdCalls += 1
+            return {...restoredUser}
+        },
+        updateSubscription: async () => undefined,
+        upsertUserDevice: async () => true,
+        limitUserGames: async () => undefined
+    }
+
+    const handler = createGetUserInfoHandler(db as any)
+    const req: any = {
+        body: {
+            userId: "",
+            accessToken: "",
+            deviceId: "BE2A.250530.026.F3",
+            platform: "android"
+        }
+    }
+    const res: any = mockRes()
+
+    await handler(req, res)
+
+    assert.equal(res.statusCode, 200)
+    assert.equal(createUserCalled, false)
+    assert.equal(getUserDataByIdCalls, 1)
+    assert.equal(res.payload.id, "777")
+    assert.equal(res.payload.accesstoken, "restored-token")
+    assert.equal(res.payload.deviceId, "BE2A.250530.026.F3")
+    assert.equal(res.payload.message, "profile information")
 })

@@ -13,6 +13,7 @@ interface GetUserInfoDB {
     findUserIdByDeviceId: (deviceId: string) => Promise<string | null>;
     getSubscriptions: (userID: string) => Promise<any>;
     getUserData: (userId: string, userToken: string, testNoGamesLeft?: boolean) => Promise<any>;
+    getUserDataById: (userId: string, testNoGamesLeft?: boolean) => Promise<any>;
     updateSubscription: (userID: string, status?: string, start?: string, end?: string) => Promise<void>;
     upsertUserDevice: (userId: string, deviceId: string, platform?: string) => Promise<boolean>;
     limitUserGames: (userID: string) => Promise<void>;
@@ -55,6 +56,21 @@ async function safeLinkDevice(
     }
 }
 
+async function applySubscriptionFixIfNeeded(conn: GetUserInfoDB, userId: string) {
+    let subStatus = await conn.getSubscriptions(userId)
+    if (subStatus["startdate"] != null) {
+        const startDate = subStatus["startdate"]
+        const endDate = subStatus["enddate"]
+
+        if (startDate > endDate) {
+            await conn.updateSubscription(userId)
+            await conn.limitUserGames(userId)
+            subStatus = await conn.getSubscriptions(userId)
+        }
+    }
+    return subStatus
+}
+
 export function createGetUserInfoHandler(conn: GetUserInfoDB) {
     return async (req: Request, res: Response) => {
         let response: any
@@ -78,23 +94,32 @@ export function createGetUserInfoHandler(conn: GetUserInfoDB) {
                 )
             }
 
-            let subStatus = await conn.getSubscriptions(userData.id)
-            if (subStatus["startdate"] != null) {
-                const startDate = subStatus["startdate"];
-                const endDate = subStatus["enddate"];
-
-                if (startDate > endDate) {
-                    await conn.updateSubscription(userData.id)
-                    await conn.limitUserGames(userData.id);
-                }
-            }
+            let subStatus = await applySubscriptionFixIfNeeded(conn, String(userData.id))
 
             response = await conn.getUserData(req.body.userId, req.body.accessToken)
             response["subscriptionstatus"] = subStatus["subscriptiontype"]
             response["message"] = "profile information"
         } catch (err) {
             if (!(err instanceof NoGamesLeftError)) {
-                response = await conn.createUser(null, null, null, deviceId, platform)
+                let restoredUserId: string | null = null
+                try {
+                    if (deviceId != null) {
+                        restoredUserId = await conn.findUserIdByDeviceId(deviceId)
+                    }
+                } catch (lookupError) {
+                    console.warn("[user_devices] failed to lookup linked user during getUserInfo restore")
+                    console.warn(lookupError?.message ?? lookupError)
+                }
+
+                if (restoredUserId == null) {
+                    response = await conn.createUser(null, null, null, deviceId, platform)
+                } else {
+                    await safeLinkDevice(conn, restoredUserId, deviceId, platform)
+                    let subStatus = await applySubscriptionFixIfNeeded(conn, restoredUserId)
+                    response = await conn.getUserDataById(restoredUserId)
+                    response["subscriptionstatus"] = subStatus["subscriptiontype"]
+                    response["message"] = "profile information"
+                }
             }
         }
         res.status(code).send(response)
